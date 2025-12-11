@@ -14,8 +14,7 @@ The RefSeq Pipeline is a Spark with Delta Lake workflow that: <br>
 ## Refseq Pipeline - Configuration (config.py) 
 The config.py file centralizes all constants, schema definitions, and shared parameters required by other components in the pipeline, ensuring consistency and maintainability across modules.<br> 
 
-## Purpose of config.py 
-The configuration module defines: <br>
+## The configuration module defines:
 	•	Global constants used across the RefSeq ingestion and parsing pipeline <br>
 	•	Default URLs for accessing NCBI RefSeq metadata <br>
 	•	Expected CDM (Common Data Model) fields <br>
