@@ -10,4 +10,21 @@ The RefSeq Pipeline is a Spark with Delta Lake workflow that: <br>
 	4.	Compares snapshots and detects changed assemblies <br>
 	5.	Parses genome assembly reports into a CDM-compliant schema <br>
 
+# Core 
+## Refseq Pipeline - Configuration (config.py) 
+The config.py file centralizes all constants, schema definitions, and shared parameters required by other components in the pipeline, ensuring consistency and maintainability across modules.<br> 
+
+## Purpose of config.py 
+The configuration module defines: <br>
+	•	Global constants used across the RefSeq ingestion and parsing pipeline <br>
+	•	Default URLs for accessing NCBI RefSeq metadata <br>
+	•	Expected CDM (Common Data Model) fields <br>
+	•	The CDM schema used when creating Spark DataFrames <br>
+	•	The UUID namespace for deterministic CDM ID generation <br>
+
+This ensures all modules reference a single source of truth instead of duplcating configuration. 
+
+# Operating Sequence 
+
+
 
