@@ -10,33 +10,38 @@ This document focuses on architecture, module responsibilities, and execution fl
 
 
 # High-level architecture 
-NCBI Datasets API
-        │
-        ▼
-datasets_api.py
-        │
-        ▼
-refseq_io.py ──────────────┐
-        │                  │
-        ▼                  │
-cdm_parse.py               │
-        │                  │
-        ▼                  │
-spark_delta.py             │
-        │                  │
-        ▼                  │
-   Delta Tables ◀── hashes_snapshot.py
-        ▲
-        │
-hashes_diff.py / snapshot_utils.py
+NCBI Datasets API <br>
+        │         <br>
+        ▼         <br>
+datasets_api.py   <br>
+        │         <br>
+        ▼         <br>
+refseq_io.py ──────────────┐   <br>
+        │                  │   <br>
+        ▼                  │   <br>
+cdm_parse.py               │   <br>
+        │                  │   <br>
+        ▼                  │   <br>
+spark_delta.py             │   <br>
+        │                  │   <br>
+        ▼                  │   <br>
+   Delta Tables ◀── hashes_snapshot.py   <br>
+        ▲                                <br>
+        │                                <br>
+hashes_diff.py / snapshot_utils.py       <br>
 
 
 # Design Principle
-	•	Deterministic IDs: CDM IDs are UUIDv5-based and stable across runs
-	•	Incremental by default: Hash snapshots determine what actually changed
-	•	Pure Spark execution: No Pandas dependency in the core pipeline
-	•	Schema-first: All outputs conform to CDM_SCHEMA
-	•	Separation of concerns: API access, parsing, hashing, and storage are isolated
+Deterministic IDs: <br>
+CDM IDs are UUIDv5-based and stable across runs <br>
+Incremental by default: <br>
+Hash snapshots determine what actually changed <br>
+Pure Spark execution: <br>
+No Pandas dependency in the core pipeline <br>
+Schema-first: <br>
+All outputs conform to CDM_SCHEMA <br>
+Separation of concerns: <br>
+API access, parsing, hashing, and storage are isolated <br>
 
 # Files in Core:
 ## config.py (Configuration)
