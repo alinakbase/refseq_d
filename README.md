@@ -10,6 +10,14 @@ The RefSeq Pipeline is a Spark with Delta Lake workflow that: <br>
 	4.	Compares snapshots and detects changed assemblies <br>
 	5.	Parses genome assembly reports into a CDM-compliant schema <br>
 
+# High-level architecture 
+NCBI Datasets API --> datasets_api.py (fetch assembly reports by taxon) --> cdm_parse.py (from parse reports to CDM schema) --> Delta lake <br> 
+From delta lake, it divided by two scripts: <br> 
+1. hashes_snapshot.py (snapshot content hashes)
+2. snapshot_utils.py (compare snapshots) <br>
+--> hashes_diff.py (map changed accession to taxon ID) 
+
+
 # Files that do not need to be run in Core:
 ## config.py (Configuration)
 The config.py file centralizes all constants, schema definitions, and shared parameters required by other components in the pipeline, ensuring consistency and maintainability across modules.<br> 
@@ -24,7 +32,21 @@ http://api.ncbi.nlm.nih.gov/datasets/v2 <br>
 Genome reports are fetched from: <br> 
 /genome/taxon/{taxon}/dataset_report 
 
-## 
+## cdm_parse.py 
+The output of cdm_parse.py is a Spark DataFrame where each row represents a single RefSeq genome assembly, normalized into a CDM-compliant schema with deterministic identifiers and typed fields, ready for ingestion into Delta Lake.
+
+## spark_delta.py 
+
+## debug_snapshot.py 
+
+## hashes_diff.py 
+
+## hashes_snapshot.py 
+
+## refseq_io.py 
+
+## snapshot_utils.py 
+
 
 
 
