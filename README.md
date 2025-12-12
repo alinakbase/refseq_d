@@ -1,36 +1,42 @@
-# RefSeq Pipeline – Full Technical Documentation
-This document explains how to run, understand, and extend the RefSeq Pipeline.
-It covers all modules inside refseq_pipeline/core/ and refseq_pipeline/cli/, execution order, internal logic, and code snippets.
+# RefSeq Pipeline – Architecture & Developer Guide
 
 # Overview 
-Detect genome changes by hashing authoritative RefSeq files (annotation/md5), then perform snapshot diffs to identify updated or newly added assemblies. <br>
-The RefSeq Pipeline is a Spark with Delta Lake workflow that: <br>
-	1.	Downloads and parses the latest RefSeq Assembly Index <br>
-	2.	Fetches annotation hashes or MD5 checksums <br>
-	3.	Writes Delta snapshot tables <br>
-	4.	Compares snapshots and detects changed assemblies <br>
-	5.	Parses genome assembly reports into a CDM-compliant schema <br>
+The RefSeq Pipeline is a Spark + Delta Lake–based data ingestion and update system designed to: <br>
+	•	Fetch genome assembly metadata from NCBI Datasets API
+	•	Track content-level changes using hash snapshots
+	•	Support incremental updates instead of full reprocessing
+	•	Normalize heterogeneous NCBI responses into a stable CDM (Common Data Model) <br>
+This document focuses on architecture, module responsibilities, and execution flow, rather than end-user CLI usage.
+
 
 # High-level architecture 
-NCBI Datasets API --> datasets_api.py (fetch assembly reports by taxon) --> cdm_parse.py (from parse reports to CDM schema) --> Delta lake <br> 
-From delta lake, it divided by two scripts: <br> 
-1. hashes_snapshot.py (snapshot content hashes)
-2. snapshot_utils.py (compare snapshots) <br>
---> hashes_diff.py (map changed accession to taxon ID) 
+NCBI Datasets API
+        │
+        ▼
+datasets_api.py
+        │
+        ▼
+refseq_io.py ──────────────┐
+        │                  │
+        ▼                  │
+cdm_parse.py               │
+        │                  │
+        ▼                  │
+spark_delta.py             │
+        │                  │
+        ▼                  │
+   Delta Tables ◀── hashes_snapshot.py
+        ▲
+        │
+hashes_diff.py / snapshot_utils.py
 
-# Core Concepts 
-## Hash-based snapshot 
-RefSeq assemblies change over time due to:
-	•	re-annotation
-	•	contamination fixes
-	•	metadata corrections
 
-Instead of comparing full files, this pipeline:
-	•	fetches annotation_hashes.txt or md5checksums.txt
-	•	computes a SHA256 fingerprint
-	•	stores the fingerprint in Delta Lake
-
-If the fingerprint changes, the assembly has changed.
+# Design Principle
+	•	Deterministic IDs: CDM IDs are UUIDv5-based and stable across runs
+	•	Incremental by default: Hash snapshots determine what actually changed
+	•	Pure Spark execution: No Pandas dependency in the core pipeline
+	•	Schema-first: All outputs conform to CDM_SCHEMA
+	•	Separation of concerns: API access, parsing, hashing, and storage are isolated
 
 # Files in Core:
 ## config.py (Configuration)
