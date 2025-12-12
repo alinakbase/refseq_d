@@ -146,14 +146,16 @@ This is typically the main entry point.
 2. Deterministic, reproducible updates
 
 # Command-Line Interface (CLI) Modules 
-The RefSeq Pipeline exposes a small set of CLI-oriented entry points designed for:
-	•	Incremental updates
-	•	Snapshot comparison
-	•	Operational debugging
-	•	Automation (cron / Airflow / CI jobs)
+The RefSeq Pipeline exposes a small set of CLI-oriented entry points designed for:<br> 
+	•	Incremental updates<br> 
+	•	Snapshot comparison<br> 
+	•	Operational debugging<br> 
+	•	Automation (cron / Airflow / CI jobs)<br> 
 
-CLI modules do not implement business logic themselves.
-They orchestrate functionality from the core/ modules.
+CLI modules do not implement business logic themselves.<br> 
+They orchestrate functionality from the core/ modules.<br> 
+
+
 
 
 
