@@ -2,7 +2,7 @@
 
 # Overview 
 The RefSeq Pipeline is a Spark + Delta Lake–based data ingestion and update system designed to: <br>
-	•	Fetch genome assembly metadata from NCBI Datasets API <br>
+	•	Fetch genome assembly metadata from NCBI Datasets API <br><br>
 	•	Track content-level changes using hash snapshots <br>
 	•	Support incremental updates instead of full reprocessing <br>
 	•	Normalize heterogeneous NCBI responses into a stable CDM (Common Data Model) <br>
