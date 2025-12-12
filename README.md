@@ -1,28 +1,28 @@
 # RefSeq Pipeline – Architecture & Developer Guide
 
 # Overview 
-## The RefSeq Pipeline is a Spark + Delta Lake–based data ingestion and update system designed to: <br>
-	•	Fetch genome assembly metadata from NCBI Datasets API <br>
-	•	Track content-level changes using hash snapshots <br>
-	•	Support incremental updates instead of full reprocessing <br>
-	•	Normalize heterogeneous NCBI responses into a stable CDM (Common Data Model) <br>
+## The RefSeq Pipeline is a Spark + Delta Lake–based data ingestion and update system design
+	Fetch genome assembly metadata from NCBI Datasets API <br>
+	Track content-level changes using hash snapshots <br>
+	Support incremental updates instead of full reprocessing <br>
+	Normalize heterogeneous NCBI responses into a stable CDM (Common Data Model) <br>
 This document focuses on architecture, module responsibilities, and execution flow, rather than end-user CLI usage. <br>
 
 
 # Design Principle
-Deterministic IDs <br>
+Deterministic IDs <br><br>
 CDM IDs are UUIDv5-based and stable across runs
 
-Incremental by default <br>
+Incremental by default <br><br>
 Hash snapshots determine what actually changed
 
-Pure Spark execution <br>
+Pure Spark execution <br><br>
 No Pandas dependency in the core pipeline
 
-Schema-first <br>
+Schema-first <br><br>
 All outputs conform to CDM_SCHEMA
 
-Separation of concerns <br>
+Separation of concerns <br><br>
 API access, parsing, hashing, and storage are isolated
 
 # Files in Core:
