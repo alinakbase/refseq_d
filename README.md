@@ -10,25 +10,25 @@ This document focuses on architecture, module responsibilities, and execution fl
 
 
 # Design Principle
-Deterministic IDs: CDM IDs are UUIDv5-based and stable across runs <br>
+1. Deterministic IDs: CDM IDs are UUIDv5-based and stable across runs <br>
+2. Incremental by default: Hash snapshots determine what actually changed <br>
+3. Pure Spark execution: No Pandas dependency in the core pipeline <br>
+4. Schema-first: All outputs conform to CDM_SCHEMA <br>
+5. Separation of concerns: API access, parsing, hashing, and storage are isolated <br>
 
-Incremental by default: Hash snapshots determine what actually changed <br>
-
-Pure Spark execution: No Pandas dependency in the core pipeline <br>
-
-Schema-first: All outputs conform to CDM_SCHEMA <br>
-
-Separation of concerns: API access, parsing, hashing, and storage are isolated <br>
-
-# Files in Core:
-## config.py (Configuration)
-Defines constants and schemas shared across the pipeline. 
-### Responsibilities 
-	•	Define CDM UUID namespace
-	•	Define RefSeq URLs
-	•	Define expected output columns
-	•	Define Spark schema for assembly stats
-This file is not meant to be executed, it is imported by other modules. 
+# Core Modules (Execution Order) 
+## config.py (Global Configuration & Schema)
+### Responsibility 
+Central configuration for the entire pipeline <br>
+### Defines 
+	•	CDM_NAMESPACE (UUID namespace for stable IDs)
+	•	NCBI API base URL
+	•	EXPECTED_COLS
+	•	CDM_SCHEMA (Spark StructType)
+	
+from refseq_pipeline.core.config import CDM_SCHEMA, EXPECTED_COLS <br>
+This file is imported by almost every other module.
+It defines the data contract of the pipeline.
 
 ## datasets_api.py (Fetching genome reports from NCBI datasets API)
 The RefSeq pipeline retrieves genome assembly metadata directly from the NCBI Datasets API, which serves as the authoritative and up-to-date source for RefSeq assembly reports. <br> 
