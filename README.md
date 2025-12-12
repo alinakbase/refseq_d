@@ -17,23 +17,31 @@ This document focuses on architecture, module responsibilities, and execution fl
 5. Separation of concerns: API access, parsing, hashing, and storage are isolated <br>
 
 # Core Modules (Execution Order) 
-## config.py (Global Configuration & Schema)
+
+## Step 1. config.py (Global Configuration & Schema)
 ### Responsibility 
 Central configuration for the entire pipeline <br>
 ### Defines 
 1. CDM_NAMESPACE (UUID namespace for stable IDs)
 2. NCBI API base URL
 3. EXPECTED_COLS
-4. CDM_SCHEMA (Spark StructType)
+4. CDM_SCHEMA (Spark StructType) <br>
+
+This file is imported by almost every other module. It defines the data contract of the pipeline.
+
+
+## Step 2. datasets_api.py (NCBI Datasets API Client)
+### Responsibility
+1. Fetch genome dataset reports from NCBI
+2. Handle pagination, retries, rate limits
    
-	•	from refseq_pipeline.core.config import CDM_SCHEMA, EXPECTED_COLS <br>
+### Key API 
+fetch_reports_by_taxon(taxon_id: str) -> Iterable[dict]
 
-This file is imported by almost every other module.
-It defines the data contract of the pipeline.
-
-## datasets_api.py (Fetching genome reports from NCBI datasets API)
+### Notes
 The RefSeq pipeline retrieves genome assembly metadata directly from the NCBI Datasets API, which serves as the authoritative and up-to-date source for RefSeq assembly reports. <br> 
 This module implements a robust, retry-enabled API client that streams assembly reports for a given taxonomic ID. <br> 
+
 ### API endpoint 
 All requests are made against the NCBI Datasets V2 API: <br>
 http://api.ncbi.nlm.nih.gov/datasets/v2 <br> 
@@ -41,25 +49,24 @@ http://api.ncbi.nlm.nih.gov/datasets/v2 <br>
 Genome reports are fetched from: <br> 
 /genome/taxon/{taxon}/dataset_report 
 
-What it does
-	•	Handles pagination
-	•	Retries on transient failures
-	•	Optionally filters:
-	•	RefSeq-only
-	•	current assemblies only
+
+
+## Step 3. refseq_io.py (RefSeq FTP & Index Utilities) 
+### Responsibility
+1. Load RefSeq assembly index
+2. Resolve: accession → ftp_path; accession → taxid
+3. Fetch remote files: annotation hash files; MD5 checksums <br> 
+This module bridges NCBI metadata and FTP content.
+
 	
-## cdm_parse.py (Normalize Reports into CDM) 
-This is the semantic core of the pipeline. <br> 
-Responsibilities
-	•	Normalize inconsistent JSON fields (snake_case / camelCase)
-	•	Safely convert numeric fields
-	•	Generate deterministic CDM IDs
-	•	Produce Spark DataFrames compatible with Delta Lake <br>
-Output schema: <br>
-Matches CDM_SCHEMA exactly.
+## Step 4. cdm_parse.py (Normalize Reports into CDM) 
+### Responsibility
+1. Normalize raw NCBI reports into CDM-aligned records
+2. Generate stable CDM IDs
+3. Perform safe type conversions
 
 
-## spark_delta.py 
+## Step 5. spark_delta.py (Spark & Delta Lake I/O layer)
 
 
 ## hashes_diff.py 
@@ -73,16 +80,7 @@ This enables incremental taxon-level reprocessing.
 ## hashes_snapshot.py (build hash snapshots) 
 
 
-## refseq_io.py (Refseq index and FTP access) 
-Handles RefSeq assembly metadata and FTP access. <br> 
-Responsibilities
-	•	Download & parse assembly_summary_refseq.txt
-	•	Map accession → ftp_path / taxid
-	•	Fetch:
-	•	annotation_hashes.txt
-	•	md5checksums.txt
 
-This module is used by hash snapshot generation.
 
 
 ## snapshot_utils.py 
