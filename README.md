@@ -10,18 +10,23 @@ The RefSeq Pipeline is a Spark with Delta Lake workflow that: <br>
 	4.	Compares snapshots and detects changed assemblies <br>
 	5.	Parses genome assembly reports into a CDM-compliant schema <br>
 
-# Core 
-## Refseq Pipeline - Configuration (config.py) 
+# Files that do not need to be run in Core:
+## config.py (Configuration)
 The config.py file centralizes all constants, schema definitions, and shared parameters required by other components in the pipeline, ensuring consistency and maintainability across modules.<br> 
 
-## The configuration module defines:
-	•	Global constants used across the RefSeq ingestion and parsing pipeline <br>
-	•	Default URLs for accessing NCBI RefSeq metadata <br>
-	•	Expected CDM (Common Data Model) fields <br>
-	•	The CDM schema used when creating Spark DataFrames <br>
-	•	The UUID namespace for deterministic CDM ID generation <br>
+## datasets_api.py (Fetching genome reports from NCBI datasets API)
+The RefSeq pipeline retrieves genome assembly metadata directly from the NCBI Datasets API, which serves as the authoritative and up-to-date source for RefSeq assembly reports. <br> 
+This module implements a robust, retry-enabled API client that streams assembly reports for a given taxonomic ID. <br> 
+### API endpoint 
+All requests are made against the NCBI Datasets V2 API: <br>
+http://api.ncbi.nlm.nih.gov/datasets/v2 <br> 
 
-This ensures all modules reference a single source of truth instead of duplcating configuration. 
+Genome reports are fetched from: <br> 
+/genome/taxon/{taxon}/dataset_report 
+
+## 
+
+
 
 # Operating Sequence 
 
