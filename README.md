@@ -112,11 +112,11 @@ Often used by CLI or orchestration scripts.
 ## Step 9. debug_snapshot.py (Debug and validation script) 
 ### Responsibility
 A minimal runnable script that verifies:
-	1.	Spark + Delta setup
-	2.	RefSeq index download
-	3.	FTP hash fetching
-	4.	Snapshot creation
-	5.	Delta write & SQL query
+	1.	Spark + Delta setup<br> 
+	2.	RefSeq index download<br> 
+	3.	FTP hash fetching<br> 
+	4.	Snapshot creation<br> 
+	5.	Delta write & SQL query<br> 
 ### Run it: 
 python -m refseq_pipeline.core.debug_snapshot <br> 
 Not part of production flow. Recommended to run once during setup. 
@@ -128,14 +128,14 @@ Not part of production flow. Recommended to run once during setup.
 
 This is typically the main entry point.
 
-# What should not run directly: 
-1. config.py
-2. cdm_parse.py
-3. datasets_api.py
-4. spark_delta.py
+## What should not run directly: 
+1. config.py<br> 
+2. cdm_parse.py<br> 
+3. datasets_api.py<br> 
+4. spark_delta.py<br> 
 
-# Incremental Update Workflow 
-1. Create new hash snapshot
+## Incremental Update Workflow 
+1. Create new hash snapshot 
 2. Compare with previous snapshot
 3. Identify changed taxids
 4. Fetch metadata only for affected taxa
@@ -144,6 +144,23 @@ This is typically the main entry point.
 ## Result
 1. Orders-of-magnitude faster than full re-ingest
 2. Deterministic, reproducible updates
+
+# Command-Line Interface (CLI) Modules 
+The RefSeq Pipeline exposes a small set of CLI-oriented entry points designed for:
+	•	Incremental updates
+	•	Snapshot comparison
+	•	Operational debugging
+	•	Automation (cron / Airflow / CI jobs)
+
+CLI modules do not implement business logic themselves.
+They orchestrate functionality from the core/ modules.
+
+
+
+
+
+
+
 
 
 
