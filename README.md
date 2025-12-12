@@ -70,46 +70,81 @@ This module bridges NCBI metadata and FTP content.
 ### Responsibility
 1. Build SparkSession with Delta support
 2. Write DataFrames to:
-	•	managed Delta tables
-	•	external Delta paths
-3. Handle:
-	•	schema evolution
-	•	overwrite / append
-	•	deduplication
-	•	cleanup
-	•	table registration
+   managed Delta tables <br> 
+   external Delta paths <br> 
+4. Handle:
+   schema evolution <br> 
+   overwrite / append <br> 
+   deduplication <br> 
+   cleanup <br> 
+   table registration <br>
+This module is pure infrastructure. 
 
 
-## hashes_diff.py 
-Compares two snapshots and finds which taxa changed. 
-Core logic
-	•	full outer join on (accession, kind)
-	•	detect new / missing / modified hashes
-	•	map changed accessions → taxon IDs
-This enables incremental taxon-level reprocessing.
+## Step 6. hashes_snapshot.py (build hash snapshots) 
+### Responsibility
+1. Generate content fingerprints for assemblies
+2. Fetch annotation hashes and MD5 checksums (fallback)
+3. Compute SHA256
+4. Output Spark DataFrame
 
-## hashes_snapshot.py (build hash snapshots) 
-
-
-
-
-
-## snapshot_utils.py 
+### Purpose
+Detect real biological content changes, not metadata noise.
 
 
 
-## debug_snapshot.py 
+## Step 7. hashes_diff.py (Incremental Change Detection) 
+### Responsibility
+1. Compare two hash snapshots
+2. Detect new assemblies, updated assemblies and removed assemblies
+3. Map changed accessions → taxonomy IDs
+   
+This module determines what needs to be reprocessed.
+
+
+## Step 8. snapshot_utils.py (Snapshot Comparison Helpers)
+### Responsibility
+1. Lightweight helpers for changed accessions, new accessions and removed accessions
+2. Operates on Delta paths instead of metastore tables
+Often used by CLI or orchestration scripts.
+
+
+## Step 9. debug_snapshot.py (Debug and validation script) 
+### Responsibility
 A minimal runnable script that verifies:
 	1.	Spark + Delta setup
 	2.	RefSeq index download
 	3.	FTP hash fetching
 	4.	Snapshot creation
 	5.	Delta write & SQL query
-Run it: 
-python -m refseq_pipeline.core.debug_snapshot
+### Run it: 
+python -m refseq_pipeline.core.debug_snapshot <br> 
+Not part of production flow. Recommended to run once during setup. 
 
+## Step 10. driver.py (Pipeline Orchestration) 
+### Responsibility
+1. High-level pipeline execution
+2. Coordinates metadata fetch, snapshot creation, diff detection, CDM parsing and Delta writes. 
 
-# Operating Sequence 
+This is typically the main entry point.
+
+# What should not run directly: 
+1. config.py
+2. cdm_parse.py
+3. datasets_api.py
+4. spark_delta.py
+
+# Incremental Update Workflow 
+1. Create new hash snapshot
+2. Compare with previous snapshot
+3. Identify changed taxids
+4. Fetch metadata only for affected taxa
+5. Re-parse and overwrite CDM tables (deduplicated)
+
+## Result
+1. Orders-of-magnitude faster than full re-ingest
+2. Deterministic, reproducible updates
+
 
 
 
