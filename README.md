@@ -67,6 +67,17 @@ This module bridges NCBI metadata and FTP content.
 
 
 ## Step 5. spark_delta.py (Spark & Delta Lake I/O layer)
+### Responsibility
+1. Build SparkSession with Delta support
+2. Write DataFrames to:
+	•	managed Delta tables
+	•	external Delta paths
+3. Handle:
+	•	schema evolution
+	•	overwrite / append
+	•	deduplication
+	•	cleanup
+	•	table registration
 
 
 ## hashes_diff.py 
