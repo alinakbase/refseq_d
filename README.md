@@ -21,12 +21,13 @@ This document focuses on architecture, module responsibilities, and execution fl
 ### Responsibility 
 Central configuration for the entire pipeline <br>
 ### Defines 
-	•	CDM_NAMESPACE (UUID namespace for stable IDs)
-	•	NCBI API base URL
-	•	EXPECTED_COLS
-	•	CDM_SCHEMA (Spark StructType)
-	
-from refseq_pipeline.core.config import CDM_SCHEMA, EXPECTED_COLS <br>
+1. CDM_NAMESPACE (UUID namespace for stable IDs)
+2. NCBI API base URL
+3. EXPECTED_COLS
+4. CDM_SCHEMA (Spark StructType)
+   
+	•	from refseq_pipeline.core.config import CDM_SCHEMA, EXPECTED_COLS <br>
+
 This file is imported by almost every other module.
 It defines the data contract of the pipeline.
 
