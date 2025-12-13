@@ -34,9 +34,6 @@ This file is imported by almost every other module. It defines the data contract
 ### Responsibility
 1. Fetch genome dataset reports from NCBI
 2. Handle pagination, retries, rate limits
-   
-### Key API 
-fetch_reports_by_taxon(taxon_id: str) -> Iterable[dict]
 
 ### Notes
 The RefSeq pipeline retrieves genome assembly metadata directly from the NCBI Datasets API, which serves as the authoritative and up-to-date source for RefSeq assembly reports. <br> 
