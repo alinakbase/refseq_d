@@ -125,11 +125,9 @@ Not part of production flow. Recommended to run once during setup.
 
 This is typically the main entry point.
 
-## What should not run directly: 
-1. config.py<br> 
-2. cdm_parse.py<br> 
-3. datasets_api.py<br> 
-4. spark_delta.py<br> 
+## What should run directly: 
+1. driver.py<br> 
+2. debug_snaoshot.py<br>
 
 ## Incremental Update Workflow 
 1. Create new hash snapshot 
