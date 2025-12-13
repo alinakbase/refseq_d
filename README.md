@@ -127,7 +127,7 @@ This is typically the main entry point.
 
 ## What should run directly: 
 1. driver.py<br> 
-2. debug_snaoshot.py<br>
+2. debug_snapshot.py<br>
 
 ## Incremental Update Workflow 
 1. Create new hash snapshot 
