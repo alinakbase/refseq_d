@@ -38,15 +38,18 @@ scalability, reproducibility, and maintainability:
 > Note: This order reflects logical dependencies, not standalone execution steps.
 
 ### Step 1. config.py (Global Configuration & Schema)
-### Responsibility 
-Central configuration for the entire pipeline <br>
-### Defines 
-1. CDM_NAMESPACE (UUID namespace for stable IDs)
-2. NCBI API base URL
-3. EXPECTED_COLS
-4. CDM_SCHEMA (Spark StructType) <br>
 
-This file is imported by almost every other module. It defines the data contract of the pipeline.
+**Responsibility**  
+Central configuration and schema definition for the entire pipeline.
+
+**Defines**
+- `CDM_NAMESPACE`: UUID namespace for deterministic CDM identifiers
+- `NCBI_BASE_V2`: Base URL for the NCBI Datasets API
+- `EXPECTED_COLS`: Required output columns for CDM normalization
+- `CDM_SCHEMA`: Spark `StructType` defining the CDM data contract
+
+This module is imported by nearly all other core components and establishes
+the schema and identifier semantics used throughout the pipeline.
 
 
 ## Step 2. datasets_api.py (NCBI Datasets API Client)
