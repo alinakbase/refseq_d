@@ -48,97 +48,158 @@ Central configuration and schema definition for the entire pipeline.
 - `EXPECTED_COLS`: Required output columns for CDM normalization
 - `CDM_SCHEMA`: Spark `StructType` defining the CDM data contract
 
-This module is imported by nearly all other core components and establishes
-the schema and identifier semantics used throughout the pipeline.
+This module is imported by nearly all other core components and establishes the schema and identifier semantics used throughout the pipeline.
 
 
-## Step 2. datasets_api.py (NCBI Datasets API Client)
-### Responsibility
-1. Fetch genome dataset reports from NCBI
-2. Handle pagination, retries, rate limits
+### Step 2. datasets_api.py (NCBI Datasets API Client)
 
-### Notes
-The RefSeq pipeline retrieves genome assembly metadata directly from the NCBI Datasets API, which serves as the authoritative and up-to-date source for RefSeq assembly reports. <br> 
-This module implements a robust, retry-enabled API client that streams assembly reports for a given taxonomic ID. <br> 
+**Responsibility**
+- Fetch genome assembly dataset reports from the NCBI Datasets API
+- Serve as the sole external API ingress for RefSeq metadata
+- Handle pagination, retries, and transient API failures
+- Stream raw assembly reports for downstream Spark-based processing
 
-### API endpoint 
-All requests are made against the NCBI Datasets V2 API: <br>
-http://api.ncbi.nlm.nih.gov/datasets/v2 <br> 
+**Notes**
+The RefSeq pipeline retrieves genome assembly metadata directly from the NCBI Datasets API, which serves as the authoritative and up-to-date source
+for RefSeq assembly reports.
 
-Genome reports are fetched from: <br> 
-/genome/taxon/{taxon}/dataset_report 
+This module implements a retry-enabled, session-based API client that iteratively streams assembly reports for a given NCBI Taxonomy ID.
+Pagination is handled via API-provided page tokens, and transient failures are mitigated through bounded retries to avoid infinite loops or API abuse.
+
+**API Endpoint**
+All requests are made against the NCBI Datasets V2 API:
+- Base URL: `https://api.ncbi.nlm.nih.gov/datasets/v2`
+- Genome assembly reports:
+  - `/genome/taxon/{taxon}/dataset_report`
 
 
 
-## Step 3. refseq_io.py (RefSeq FTP & Index Utilities) 
-### Responsibility
-1. Load RefSeq assembly index
-2. Resolve: accession → ftp_path; accession → taxid
-3. Fetch remote files: annotation hash files; MD5 checksums <br> 
-This module bridges NCBI metadata and FTP content.
+### Step 3. refseq_io.py (RefSeq FTP & Assembly Index Utilities)
+
+**Responsibility**
+- Load and parse the RefSeq assembly index (assembly_summary_refseq.txt)
+- Resolve stable mappings:
+  - accession → FTP path
+  - accession → taxonomic identifiers (taxid, species_taxid)
+- Fetch remote content from RefSeq FTP:
+  - annotation hash files
+  - MD5 checksum files
+- Provide normalized, cached access to FTP-based metadata and file content
+
+**Notes**
+This module acts as the boundary layer between NCBI’s structured metadata (API responses and assembly summaries) and the RefSeq FTP filesystem.
+
+While upstream modules operate on JSON-based assembly reports, `refseq_io.py` resolves those records into concrete FTP locations and retrieves content used for downstream change detection (hash snapshots).
+
+Network access is centralized and stabilized via shared HTTP sessions, retry logic, and optional caching to minimize redundant downloads.
 
 	
-## Step 4. cdm_parse.py (Normalize Reports into CDM) 
-### Responsibility
-1. Normalize raw NCBI reports into CDM-aligned records
-2. Generate stable CDM IDs
-3. Perform safe type conversions
+### Step 4. cdm_parse.py (Normalize NCBI Reports into CDM)
+
+**Responsibility**
+- Normalize heterogeneous NCBI assembly reports into a stable, schema-aligned CDM representation
+- Generate deterministic CDM entity IDs (UUIDv5-based) to ensure cross-run and cross-release stability
+- Perform safe and defensive type conversions on numeric and percentage fields
+- Bridge raw NCBI JSON structures into Spark-native rows conforming to `CDM_SCHEMA`
+
+**Notes**
+NCBI assembly reports contain heterogeneous field naming conventions (e.g. snake_case vs camelCase), optional sections, and loosely typed values.
+This module isolates all normalization logic, ensuring that downstream Spark and Delta Lake operations operate on a clean, predictable schema.
+By centralizing ID generation, field selection, and type coercion, `cdm_parse.py` guarantees that identical biological entities are consistently mapped to the same CDM identifiers across pipeline runs.
 
 
-## Step 5. spark_delta.py (Spark & Delta Lake I/O layer)
-### Responsibility
-1. Build SparkSession with Delta support
-2. Write DataFrames to:
-   managed Delta tables <br> 
-   external Delta paths <br> 
-4. Handle:
-   schema evolution <br> 
-   overwrite / append <br> 
-   deduplication <br> 
-   cleanup <br> 
-   table registration <br>
-This module is pure infrastructure. 
+### Step 5. spark_delta.py (Spark & Delta Lake I/O Layer)
+**Responsibility**
+- Initialize SparkSession with Delta Lake support and metastore integration
+- Persist Spark DataFrames into Delta Lake as either:
+  - managed tables (metastore-managed)
+  - external Delta tables (path-based)
+- Enforce schema consistency and controlled schema evolution
+- Support append and overwrite semantics with safety checks
+- Perform post-write cleanup, deduplication, and optional optimization
+- Register external Delta paths into the Spark metastore for SQL access
+
+**Notes**
+
+This module serves as the infrastructure boundary between Spark-based computation and persistent storage.
+
+All Delta Lake–specific behaviors — including schema evolution, overwrite safeguards, deduplication rules, and table lifecycle management — are centralized here to prevent leakage of storage logic into parsing or business logic layers.
+
+By isolating write semantics and cleanup policies, `spark_delta.py` ensures that upstream modules can focus solely on data correctness, while downstream consumers interact with stable, queryable Delta tables.
 
 
-## Step 6. hashes_snapshot.py (build hash snapshots) 
-### Responsibility
-1. Generate content fingerprints for assemblies
-2. Fetch annotation hashes and MD5 checksums (fallback)
-3. Compute SHA256
-4. Output Spark DataFrame
+### Step 6. hashes_snapshot.py (Content Hash Snapshot Generation)
 
-### Purpose
-Detect real biological content changes, not metadata noise.
+**Responsibility**
+- Generate deterministic content fingerprints for RefSeq assemblies
+- Fetch remote assembly content from NCBI FTP, including:
+  - annotation hash files (preferred)
+  - MD5 checksum files (fallback)
+- Normalize raw content and compute SHA256 digests
+- Materialize hash snapshots as Spark DataFrames suitable for Delta persistence
 
+**Purpose**
+Enable content-based change detection at the assembly level.
 
-
-## Step 7. hashes_diff.py (Incremental Change Detection) 
-### Responsibility
-1. Compare two hash snapshots
-2. Detect new assemblies, updated assemblies and removed assemblies
-3. Map changed accessions → taxonomy IDs
-   
-This module determines what needs to be reprocessed.
+Rather than relying on timestamps or metadata fields, this module fingerprints the actual biological deliverables (annotation files and checksums) associated with each assembly.
+These hash snapshots form the foundation for incremental updates, ensuring that downstream processing is triggered only when the underlying biological content has genuinely changed.
 
 
-## Step 8. snapshot_utils.py (Snapshot Comparison Helpers)
-### Responsibility
-1. Lightweight helpers for changed accessions, new accessions and removed accessions
-2. Operates on Delta paths instead of metastore tables
-Often used by CLI or orchestration scripts.
+
+### Step 7. hashes_diff.py (Incremental Change Detection)
+
+**Responsibility**
+- Compare two hash snapshots (old vs new) stored in Delta Lake
+- Identify assembly-level changes, including:
+  - newly introduced assemblies
+  - updated assemblies with content changes
+  - removed or missing assemblies
+- Resolve changed accessions to affected taxonomy IDs
+
+**Purpose**
+
+This module is the decision engine of the incremental pipeline.
+
+By diffing content-based hash snapshots rather than metadata, it determines the minimal set of assemblies and taxa that require reprocessing.
+The output of this step directly drives downstream execution, ensuring that only biologically meaningful changes propagate through the system.
 
 
-## Step 9. debug_snapshot.py (Debug and validation script) 
-### Responsibility
-A minimal runnable script that verifies:
-	1.	Spark + Delta setup<br> 
-	2.	RefSeq index download<br> 
-	3.	FTP hash fetching<br> 
-	4.	Snapshot creation<br> 
-	5.	Delta write & SQL query<br> 
-### Run it: 
-python -m refseq_pipeline.core.debug_snapshot <br> 
-Not part of production flow. Recommended to run once during setup. 
+### Step 8. snapshot_utils.py (Delta Snapshot Diff Utilities)
+
+**Responsibility**
+
+- Provide lightweight, reusable helpers for comparing two Delta snapshots
+- Identify:
+  - newly added accessions
+  - removed accessions
+  - accessions with content changes
+- Operate directly on Delta table paths rather than Spark metastore tables
+
+**Purpose**
+
+This module exposes low-level snapshot diff primitives that can be reused by CLI commands, orchestration layers, and ad-hoc workflows.
+It deliberately avoids any domain-specific logic (e.g. taxonomic resolution), serving as a thin abstraction over Delta Lake snapshot comparisons.
+
+
+### Step 9. debug_snapshot.py (System Sanity Check & Debug Harness)
+
+**Responsibility**
+
+Provide a minimal, end-to-end runnable workflow to validate that the core
+RefSeq pipeline infrastructure is functioning correctly.
+
+Specifically, this script verifies:
+
+1. Spark + Delta Lake initialization
+2. RefSeq assembly index download and parsing
+3. FTP-based hash retrieval (annotation / MD5)
+4. Hash snapshot DataFrame construction
+5. Delta write path correctness and SQL-level readability
+
+### Usage
+
+```bash
+python -m refseq_pipeline.core.debug_snapshot
 
 ## Step 10. driver.py (Pipeline Orchestration) 
 ### Responsibility
