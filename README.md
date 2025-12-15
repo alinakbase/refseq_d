@@ -34,9 +34,10 @@ scalability, reproducibility, and maintainability:
 - **Separation of concerns**  
   API access, parsing, hashing, and storage are implemented as independent modules.
 
-# Core Modules (Execution Order) 
+## Core Modules (Execution Order)
+> Note: This order reflects logical dependencies, not standalone execution steps.
 
-## Step 1. config.py (Global Configuration & Schema)
+### Step 1. config.py (Global Configuration & Schema)
 ### Responsibility 
 Central configuration for the entire pipeline <br>
 ### Defines 
