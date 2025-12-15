@@ -199,6 +199,7 @@ Specifically, this script verifies:
 
 ```bash
 python -m refseq_pipeline.core.debug_snapshot
+```bash
 
 ### Step 10. driver.py (Pipeline Orchestration Layer)
 **Responsibility**
