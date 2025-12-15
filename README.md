@@ -14,12 +14,25 @@ This document focuses on the internal architecture, module responsibilities, and
 rather than end-user CLI usage.
 
 
-# Design Principle
-1. Deterministic IDs: CDM IDs are UUIDv5-based and stable across runs <br>
-2. Incremental by default: Hash snapshots determine what actually changed <br>
-3. Pure Spark execution: No Pandas dependency in the core pipeline <br>
-4. Schema-first: All outputs conform to CDM_SCHEMA <br>
-5. Separation of concerns: API access, parsing, hashing, and storage are isolated <br>
+## Design Principles
+
+The RefSeq Pipeline follows a set of explicit design principles to ensure
+scalability, reproducibility, and maintainability:
+
+- **Deterministic IDs**  
+  CDM identifiers are UUIDv5-based and remain stable across runs given the same input.
+
+- **Incremental by default**  
+  Hash-based snapshots are used to detect content-level changes, avoiding unnecessary reprocessing.
+
+- **Pure Spark execution**  
+  The core pipeline avoids Pandas and relies exclusively on Spark for scalability.
+
+- **Schema-first design**  
+  All outputs strictly conform to the predefined `CDM_SCHEMA`.
+
+- **Separation of concerns**  
+  API access, parsing, hashing, and storage are implemented as independent modules.
 
 # Core Modules (Execution Order) 
 
