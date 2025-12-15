@@ -201,44 +201,92 @@ Specifically, this script verifies:
 ```bash
 python -m refseq_pipeline.core.debug_snapshot
 
-## Step 10. driver.py (Pipeline Orchestration) 
-### Responsibility
-1. High-level pipeline execution
-2. Coordinates metadata fetch, snapshot creation, diff detection, CDM parsing and Delta writes. 
+### Step 10. driver.py (Pipeline Orchestration Layer)
+**Responsibility**
+Provide a high-level orchestration layer that wires together the core RefSeq pipeline modules into a coherent execution flow.
 
-This is typically the main entry point.
+Specifically, this module coordinates:
 
-## What should run directly: 
-1. driver.py<br> 
-2. debug_snapshot.py<br>
+1. Fetching genome assembly metadata
+2. Generating or loading hash snapshots
+3. Detecting incremental changes
+4. Parsing selected reports into CDM format
+5. Writing normalized outputs into Delta Lake
+6. Performing post-write cleanup and optimization
 
-## Incremental Update Workflow 
-1. Create new hash snapshot 
-2. Compare with previous snapshot
-3. Identify changed taxids
+**Role in the Architecture**
+
+This module acts as the **glue layer** of the pipeline.
+
+- It does not implement domain logic itself
+- It does not fetch data directly from APIs or FTP
+- It does not define schemas or parsing rules
+
+Instead, it composes and sequences lower-level modules such as:
+
+- `datasets_api.py`
+- `refseq_io.py`
+- `hashes_snapshot.py`
+- `hashes_diff.py`
+- `cdm_parse.py`
+- `spark_delta.py`
+
+
+
+## Execution Entry Points
+
+The following modules are intended to be executed directly:
+1. **driver.py**  
+   Primary pipeline entry point. Orchestrates metadata fetch, hash snapshot generation, incremental diffing, CDM parsing, and Delta Lake writes.
+
+2. **debug_snapshot.py**  
+   Diagnostic and validation script. Verifies Spark + Delta setup, RefSeq index resolution, FTP hash fetching, snapshot creation, and Delta writes.
+   Intended for one-time setup validation and troubleshooting.
+
+All other modules are designed to be imported and composed, not executed directly.
+
+## Incremental Update Workflow
+
+The RefSeq pipeline is incremental by design and avoids full re-ingestion whenever possible.
+
+Typical update flow:
+
+1. Create a new hash snapshot for all (or selected) assemblies
+2. Compare the new snapshot against a previous snapshot
+3. Identify accessions and taxonomy IDs whose content has changed
 4. Fetch metadata only for affected taxa
-5. Re-parse and overwrite CDM tables (deduplicated)
+5. Re-parse selected reports into CDM format
+6. Overwrite or merge Delta tables with deduplication
 
-## Result
-1. Orders-of-magnitude faster than full re-ingest
-2. Deterministic, reproducible updates
+This workflow ensures that only biologically meaningful changes trigger downstream recomputation.
 
-# Command-Line Interface (CLI) Modules 
-The RefSeq Pipeline exposes a small set of CLI-oriented entry points designed for:<br> 
-	•	Incremental updates<br> 
-	•	Snapshot comparison<br> 
-	•	Operational debugging<br> 
-	•	Automation (cron / Airflow / CI jobs)<br> 
+## Results and Benefits
 
-CLI modules do not implement business logic themselves.<br> 
-They orchestrate functionality from the core/ modules.<br> 
+- Orders-of-magnitude faster than full RefSeq re-ingestion
+- Deterministic and reproducible updates
+- Scales to large taxonomic scopes
+- Minimizes unnecessary Spark recomputation
 
+## Command-Line Interface (CLI) Modules
 
+The RefSeq pipeline exposes a small set of CLI-oriented entry points designed for:
 
+- Incremental updates
+- Snapshot comparison
+- Operational debugging
+- Automation (cron, Airflow, CI/CD jobs)
 
+CLI modules act as orchestration layers.
 
+They do **not** implement business logic themselves.
+Instead, they coordinate functionality from the `core/` modules, including:
+- API access
+- Hash snapshot generation
+- Snapshot diffing
+- CDM parsing
+- Delta Lake I/O
 
-
+This design allows CLI interfaces to remain thin, stable, and easy to evolve independently of the underlying data processing logic.
 
 
 
