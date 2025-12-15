@@ -196,10 +196,9 @@ Specifically, this script verifies:
 4. Hash snapshot DataFrame construction
 5. Delta write path correctness and SQL-level readability
 
-
-```bash
+**Usage**
 python -m refseq_pipeline.core.debug_snapshot
-```bash
+
 
 ### Step 10. driver.py (Pipeline Orchestration Layer)
 **Responsibility**
