@@ -288,42 +288,80 @@ Instead, they coordinate functionality from the `core/` modules, including:
 This design allows CLI interfaces to remain thin, stable, and easy to evolve independently of the underlying data processing logic.
 
 
-## RefSeq Pipeline – Incremental update architecture & Execution Guide 
+# RefSeq Pipeline  
+## Incremental Update Architecture & Execution Guide
+
+The RefSeq Pipeline is a **Spark + Delta Lake–based incremental ingestion system** for RefSeq genome assemblies.
 Instead of reprocessing the full RefSeq dataset on every release, the pipeline:
-- Tracks content-level changes using hash snapshots
-- Detects incremental differences between releases
-- Reprocesses only affected genomes
-- Normalizes heterogeneous NCBI responses into a stable CDM (Common Data Model)
 
-## Recommended Execution Order (CLI Modules) 
-**Option A: Production Entry Point**
-For routine update, use the single command: <br>
-python -m refseq_pipeline.cli.refseq_update_manager <br>
-This command internally performs: 
-1. Index comparison
-2. Snapshot creation
-3. Snapshot diff
-4. Output of incremental changes
+- Tracks **content-level changes** using hash snapshots
+- Detects **incremental differences** between releases
+- Reprocesses **only affected genomes**
+- Normalizes heterogeneous NCBI responses into a stable **CDM (Common Data Model)**
+
+This document focuses on **architecture, execution order, and operational usage**, rather than low-level implementation details.
+
+---
+
+## Recommended Execution Order (CLI Modules)
+
+The pipeline provides two operational modes:
+
+- **Option A**: Single-command production entry point  
+- **Option B**: Step-by-step execution for debugging or fine-grained control  
+
+---
+
+## Option A: Production Entry Point (Recommended)
+
+For routine RefSeq updates, use the unified entry point:
+python -m refseq_pipeline.cli.refseq_update_manager
 
 
-**Option B: Step-by-step Execution**
-The following order reflects the logical dependency chain between modules.
+## Option B: Step-by-step Execution
+
+The following steps reflect the **logical dependency chain** between CLI modules.
+This mode is recommended for debugging, validation, or fine-grained control.
+
+---
 
 ### Step 1. Save RefSeq Assembly Index
-Module: save_index_tsv.py <br>
-Purpose: Download and version the RefSeq assembly index. <br>
-Run this step: 
-	•	On first setup <br>
-	•	Or when manually versioning index files <br>
+
+**Module:** `save_index_tsv.py`
+
+**Purpose:**  
+Download and version the RefSeq assembly index (`assembly_summary_refseq.tsv`).
+
+This index acts as the authoritative source for:
+- Assembly accessions
+- FTP paths
+- Taxonomic relationships
+
+**When to run this step:**
+- On **first-time setup**
+- When **manually versioning** RefSeq releases
+- When validating index-level changes before snapshot creation
 
 ### Step 2. Create Hash Snapshot
-Module: snapshot_hashes.py <br>
-Purpose: Generate content-level hash snapshots for all RefSeq assemblies. <br> 
-Output: <br> 
-	•	Delta table: refseq_api.assembly_hashes <br>
-	•	Columns include accession, content SHA256, snapshot tag, timestamp <br>
 
-This step is required before any diff or incremental update.
+**Module:** `snapshot_hashes.py`
+
+**Purpose:**  
+Generate **content-level hash snapshots** for all RefSeq assemblies.
+
+Each snapshot represents the biological content state of assemblies at a specific point in time, independent of metadata or release labels.
+
+**Output:**
+- Delta table: `refseq_api.assembly_hashes`
+- Key columns:
+  - `accession`
+  - `content_sha256`
+  - `tag` (snapshot identifier)
+  - `retrieved_at`
+
+**Notes:**
+- Hash snapshots are used as the **single source of truth** for change detection.
+- This step **must be executed before** any snapshot diff or incremental update.
 
 ### Step 3. Detect Updated or new assemblies 
 Module: detect_updates.py <br>
