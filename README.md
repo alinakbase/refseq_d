@@ -366,6 +366,7 @@ Each snapshot represents the biological content state of assemblies at a specifi
 ### Step 3. Detect Updated or New Assemblies
 
 **Module:** `detect_updates.py`
+
 **Purpose:**  
 Compare two hash snapshot tags and identify assemblies whose **content state has changed**.
 
