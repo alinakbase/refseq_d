@@ -441,9 +441,3 @@ For routine updates and scheduled runs, use:
 
 ```bash
 python -m refseq_pipeline.cli.refseq_update_manager
-
-
-
-
-
-
