@@ -312,10 +312,56 @@ The following order reflects the logical dependency chain between modules.
 ### Step 1. Save RefSeq Assembly Index
 Module: save_index_tsv.py <br>
 Purpose: Download and version the RefSeq assembly index. <br>
-Run this step:
-	•	On first setup
-	•	Or when manually versioning index files
+Run this step: 
+	•	On first setup <br>
+	•	Or when manually versioning index files <br>
 
+### Step 2. Create Hash Snapshot
+Module: snapshot_hashes.py <br>
+Purpose: Generate content-level hash snapshots for all RefSeq assemblies. <br> 
+Output: <br> 
+	•	Delta table: refseq_api.assembly_hashes <br>
+	•	Columns include accession, content SHA256, snapshot tag, timestamp <br>
+
+This step is required before any diff or incremental update.
+
+### Step 3. Detect Updated or new assemblies 
+Module: detect_updates.py <br>
+Purpose: Compare two snapshot tags and detect new or updated accessions. <br> 
+Output: <br> 
+	•	CSV diff containing accession-level changes
+	•	Change types: new, updated
+
+### Step 4. Map changes to TaxIDs 
+Module: diff_changed_taxids.py <br> 
+Purpose: Convert accession-level changes into affected TaxIDs. <br> 
+Output: <br>
+	•	changed_taxids.json
+
+### Step 5. Fetch and rebuild CDM tables for changed TaxIDs 
+Module: fetch_taxon_reports.py <br>
+Purpose: Fetch metadata from the NCBI Datasets API only for affected taxa and write CDM tables. <br> 
+Output: <br>
+	•	Delta tables containing normalized CDM records
+	•	Deduplicated and schema-aligned
+
+## Debug and Utility Scripts (Non-Production)
+
+The following scripts are not part of the production flow, but are useful for validation and debugging:
+	•	debug_snapshot.py – verify Spark, Delta, FTP hashing, and snapshot writes
+	•	compare_snapshots.py – inspect snapshot differences interactively
+	•	debug_register.py – manually register Delta tables
+
+## Summary
+
+The RefSeq Pipeline enables deterministic, incremental, and scalable updates by:
+	•	Tracking real content changes
+	•	Avoiding unnecessary recomputation
+	•	Isolating responsibilities across cleanly defined modules
+
+The recommended operational entry point is: <br> 
+refseq_update_manager.py <br> 
+All other CLI tools exist to support debugging, experimentation, or fine-grained control.
 
 
 
