@@ -297,7 +297,8 @@ Instead of reprocessing the full RefSeq dataset on every release, the pipeline:
 
 ## Recommended Execution Order (CLI Modules) 
 **Option A: Production Entry Point**
-For routine update, use the single command: python -m refseq_pipeline.cli.refseq_update_manager <br>
+For routine update, use the single command: <br>
+python -m refseq_pipeline.cli.refseq_update_manager <br>
 This command internally performs: 
 1. Index comparison
 2. Snapshot creation
@@ -305,8 +306,16 @@ This command internally performs:
 4. Output of incremental changes
 
 
-**Option B: Step-by-step Execution 
+**Option B: Step-by-step Execution**
 The following order reflects the logical dependency chain between modules.
+
+### Step 1. Save RefSeq Assembly Index
+Module: save_index_tsv.py <br>
+Purpose: Download and version the RefSeq assembly index. <br>
+Run this step:
+	•	On first setup
+	•	Or when manually versioning index files
+
 
 
 
