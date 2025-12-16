@@ -363,43 +363,84 @@ Each snapshot represents the biological content state of assemblies at a specifi
 - Hash snapshots are used as the **single source of truth** for change detection.
 - This step **must be executed before** any snapshot diff or incremental update.
 
-### Step 3. Detect Updated or new assemblies 
-Module: detect_updates.py <br>
-Purpose: Compare two snapshot tags and detect new or updated accessions. <br> 
-Output: <br> 
-	•	CSV diff containing accession-level changes
-	•	Change types: new, updated
+### Step 3. Detect Updated or New Assemblies
 
-### Step 4. Map changes to TaxIDs 
-Module: diff_changed_taxids.py <br> 
-Purpose: Convert accession-level changes into affected TaxIDs. <br> 
-Output: <br>
-	•	changed_taxids.json
+**Module:** `detect_updates.py`
+**Purpose:**  
+Compare two hash snapshot tags and identify assemblies whose **content state has changed**.
 
-### Step 5. Fetch and rebuild CDM tables for changed TaxIDs 
-Module: fetch_taxon_reports.py <br>
-Purpose: Fetch metadata from the NCBI Datasets API only for affected taxa and write CDM tables. <br> 
-Output: <br>
-	•	Delta tables containing normalized CDM records
-	•	Deduplicated and schema-aligned
+This step operates purely on hash snapshots and does **not** fetch any external metadata.
+
+**Output:**
+- CSV file containing accession-level differences
+- Each record includes:
+  - `accession`
+  - `change_type` (`new`, `updated`)
+
+### Step 4. Map Accession-Level Changes to TaxIDs
+
+**Module:** `diff_changed_taxids.py`
+
+**Purpose:**  
+Translate accession-level content changes into the corresponding **affected Taxonomy IDs (TaxIDs)**.
+
+This step resolves biological impact boundaries by grouping changed assemblies under their parent taxa.
+
+**Output:**
+- `changed_taxids.json` — a deduplicated list of TaxIDs whose assemblies were:
+  - newly added
+  - updated
+  - removed
+
+### Step 5. Fetch and Rebuild CDM Tables for Affected TaxIDs
+
+**Module:** `fetch_taxon_reports.py`
+
+**Purpose:**  
+Fetch genome assembly metadata from the NCBI Datasets API **only for TaxIDs identified as changed**,  
+normalize the responses into the Common Data Model (CDM),  
+and write the results into Delta Lake tables.
+
+This step performs the **actual incremental reprocessing**, ensuring that only biologically affected taxa are rebuilt.
+
+**Output:**
+- Delta tables containing CDM-normalized assembly records
+- Records are:
+  - schema-aligned (CDM_SCHEMA)
+  - deduplicated by deterministic CDM IDs
+  - safe for overwrite or append operations
 
 ## Debug and Utility Scripts (Non-Production)
 
-The following scripts are not part of the production flow, but are useful for validation and debugging:
-	•	debug_snapshot.py – verify Spark, Delta, FTP hashing, and snapshot writes
-	•	compare_snapshots.py – inspect snapshot differences interactively
-	•	debug_register.py – manually register Delta tables
+The following scripts are **not part of the production execution path**,  
+but are provided to support validation, inspection, and debugging during development and operations:
+
+- **debug_snapshot.py**  
+  Validate Spark and Delta Lake setup, RefSeq index loading, FTP hash fetching, and snapshot writes.
+
+- **compare_snapshots.py**  
+  Inspect and explore differences between two snapshot tags interactively.
+
+- **debug_register.py**  
+  Manually register an existing Delta table into the Spark metastore for inspection or recovery.
+
+These utilities are intentionally separated from the main pipeline to keep production execution deterministic and minimal.
 
 ## Summary
 
-The RefSeq Pipeline enables deterministic, incremental, and scalable updates by:
-	•	Tracking real content changes
-	•	Avoiding unnecessary recomputation
-	•	Isolating responsibilities across cleanly defined modules
+The RefSeq Pipeline implements a **deterministic, incremental update architecture** that enables scalable and efficient processing of large genome datasets by:
 
-The recommended operational entry point is: <br> 
-refseq_update_manager.py <br> 
-All other CLI tools exist to support debugging, experimentation, or fine-grained control.
+- Tracking **real content-level changes** via hash snapshots  
+- Avoiding unnecessary full re-ingestion and recomputation  
+- Isolating responsibilities across clearly defined core and CLI modules  
+- Enforcing schema consistency through a Common Data Model (CDM)
+
+### Recommended Operational Entry Point
+
+For routine updates and scheduled runs, use:
+
+```bash
+python -m refseq_pipeline.cli.refseq_update_manager
 
 
 
