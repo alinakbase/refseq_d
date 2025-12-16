@@ -288,6 +288,27 @@ Instead, they coordinate functionality from the `core/` modules, including:
 This design allows CLI interfaces to remain thin, stable, and easy to evolve independently of the underlying data processing logic.
 
 
+## RefSeq Pipeline – Incremental update architecture & Execution Guide 
+Instead of reprocessing the full RefSeq dataset on every release, the pipeline:
+- Tracks content-level changes using hash snapshots
+- Detects incremental differences between releases
+- Reprocesses only affected genomes
+- Normalizes heterogeneous NCBI responses into a stable CDM (Common Data Model)
+
+## Recommended Execution Order (CLI Modules) 
+**Option A: Production Entry Point**
+For routine update, use the single command: python -m refseq_pipeline.cli.refseq_update_manager <br>
+This command internally performs: 
+1. Index comparison
+2. Snapshot creation
+3. Snapshot diff
+4. Output of incremental changes
+
+
+**Option B: Step-by-step Execution 
+The following order reflects the logical dependency chain between modules.
+
+
 
 
 
